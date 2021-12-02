@@ -170,7 +170,7 @@
 </head>
 
 <body>
-    <div id="legend">
+    <!-- <div id="legend">
         <div class="legend-item">
             <div class="circle "></div>
             <div class="orange_">Under construction</div>
@@ -187,33 +187,32 @@
             <div class="circle blue"></div>
             <div class="blue_">Electric</div>
         </div>
-
-    </div>
+    </div> -->
     <div id="map"></div>
     <script>
         mapboxgl.accessToken = 'pk.eyJ1IjoicmFwaGRlbHJpbyIsImEiOiJja3VnanM0ZjIwMmhrMm5xdHlkbWxuMnU1In0.N7nPMuJI0pq3P88xDwYWDg';
 
         const map = new mapboxgl.Map({
             container: 'map', // container ID
-            style:  {
-            "version": 8,
-            "name": "blank",
-            "sources": {
-                "openmaptiles": {
-                    "type": "vector",
-                    "url": ""
-                }
-            },
-            "layers": [{
-                "id": "background",
-                "type": "background",
-                "paint": {
-                    "background-color": "white"
-                }
-            }]
-        }, // style URL
-            center: { lng: -96.52873580301348, lat: 37.59114956199883 }, // starting position
-            zoom: 3.5 // starting zoom
+            style: {
+                "version": 8,
+                "name": "blank",
+                "sources": {
+                    "openmaptiles": {
+                        "type": "vector",
+                        "url": ""
+                    }
+                },
+                "layers": [{
+                    "id": "background",
+                    "type": "background",
+                    "paint": {
+                        "background-color": "white"
+                    }
+                }]
+            }, // style URL
+            center: { lng: -75.71876332152435, lat: 42.66567071643135 },
+            zoom: 6.3 // starting zoom
         });
         // Add zoom and rotation controls to the map.
         map.addControl(new mapboxgl.NavigationControl());
@@ -225,9 +224,19 @@
             map.addSource('data', {
                 type: 'geojson',
                 // Use a URL for the value for the `data` property.
-                data: 'data/gz_2010_us_040_00_500k.json'
+                data: 'data/Counties_Shoreline.json'
             });
 
+            map.addLayer({
+                'id': 'maine',
+                'type': 'fill',
+                'source': 'data', // reference the data source
+                'layout': {},
+                'paint': {
+                    'fill-color': '#ccccff', // blue color fill
+                    'fill-opacity': 1
+                }
+            });
             map.addLayer({
                 'id': 'route',
                 'type': 'line',
@@ -237,13 +246,14 @@
                     'line-cap': 'round'
                 },
                 'paint': {
-                    'line-color': '#888',
-                    'line-width': 1
+                    'line-color': '#fff',
+                    'line-width': 2
                 }
             });
 
 
-            d3.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vRwUDXLbdns7anjb_T-jncWbfe_In31zVT9YlsibQifbY1YkDPGv1w90krJ7VsjStYgwwJWH5mPPiCa/pub?output=csv').then(data => {
+
+            d3.csv('https://docs.google.com/spreadsheets/d/e/2PACX-1vT0AhmLEG-A6bsjGlY1wzjhNQDxQ1eWtx2jBloQqOFuQ5GxS3DAPX9JZIt26SWN7tXIS0xXrrLlQAPH/pub?output=csv').then(data => {
 
                 const colors = {
                     'RNG': "#00B24A",
@@ -255,10 +265,10 @@
                 let bounds = new mapboxgl.LngLatBounds();
                 const pins = pinsData.map(i => {
                     console.log('i', i);
-                    const [lat, lng] = i.Latlng.split(",");
-                    const latlng = [lng, lat];
+                    const { lat, lng, Name } = i
+                    const latlng = [+lng, +lat];
                     bounds.extend(latlng)
-                    return turf.point(latlng, { ...i, icon: i.icon, color: colors[i.Type] });
+                    return turf.point(latlng, { ...i, name: Name, color: "#F7921E" });
                 })
 
                 const collection = turf.featureCollection(pins)
@@ -275,23 +285,24 @@
                 }
             });
 
-            map.addLayer({
-                'id': 'pins-stroke',
-                'type': 'circle',
-                'source': 'pins',
-                'paint': {
-                    'circle-radius': 10,
-                    "circle-opacity": 0,
-                    "circle-stroke-width": 2,
-                    "circle-stroke-color": ['get', 'color'],
-                }
-            });
+            // map.addLayer({
+            //     'id': 'pins-stroke',
+            //     'type': 'circle',
+            //     'source': 'pins',
+            //     'paint': {
+            //         'circle-radius': 10,
+            //         "circle-opacity": 0,
+            //         "circle-stroke-width": 2,
+            //         "circle-stroke-color": ['get', 'color'],
+            //     }
+            // });
+
             map.addLayer({
                 'id': 'pins-layer',
                 'type': 'circle',
                 'source': 'pins',
                 'paint': {
-                    'circle-radius': 5,
+                    'circle-radius': 8,
                     'circle-stroke-width': 0,
                     'circle-color': ['get', 'color'],
 
@@ -299,7 +310,7 @@
             });
 
 
-            map.on('click', 'pins-stroke', (e) => {
+            map.on('click', 'pins-layer', (e) => {
                 // Copy coordinates array.
                 const coordinates = e.features[0].geometry.coordinates.slice();
                 const props = e.features[0].properties;
@@ -316,19 +327,6 @@
                 <div style="margin:20px 10px;">
                     <div>
                         <h1>${props.Name}</h1>
-                        <h4>${props.Addr}</h4>
-                    </div>
-                    <div style="display:flex;justify-content: space-between; ">
-
-                        <div>
-                            <div class="title">Annual Output</div>
-                            <div class="data">48 xyz</div>
-                        </div>
-                        <div>
-                            <div  class="title">Another Figure</div>
-                            <div class="data">99999 abc</div>
-                        </div>
-
                     </div>
                 </div>
 
@@ -344,12 +342,12 @@
             });
 
             // Change the cursor to a pointer when the mouse is over the places layer.
-            map.on('mouseenter', 'pins-stroke', () => {
+            map.on('mouseenter', 'pins-layer', () => {
                 map.getCanvas().style.cursor = 'pointer';
             });
 
             // Change it back to a pointer when it leaves.
-            map.on('mouseleave', 'pins-stroke', () => {
+            map.on('mouseleave', 'pins-layer', () => {
                 map.getCanvas().style.cursor = '';
             });
 
